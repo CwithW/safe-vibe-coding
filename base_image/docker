@@ -1,0 +1,11 @@
+#!/bin/sh
+
+
+echo "IMPORTANT: You are working with a remote docker server, docker bind mounts will not work, and you will not be able to access the ports of the container. 
+  - If you need to read files from a container, use \`docker cp\` or \`docker exec container-id cat file-path\`.
+  - If you need to write files to a container, use \`docker cp\` or \`docker exec container-id sh -c 'cat > file-path'\` and pass the content via stdin, or build the file within the docker image.
+  - If you need to access a tcp port of a running container, use another docker in the same docker network to access it, e.g. \`docker run --rm curlimages/curl:8.18.0 curl http://container-ip:port\`
+  - After you have read this warning, to suppress this warning, you must use /usr/bin/docker-real "
+echo ""
+
+exec /usr/bin/docker-real "$@"

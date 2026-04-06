@@ -1,0 +1,6 @@
+services:
+  base-image:
+    build: .
+    image: cwithw/safe-vibe-coding-base:latest
+    restart: no
+    command: exit 0

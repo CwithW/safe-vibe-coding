@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# create a docker ,-it --rm,named safe-vibe-coding-codex[-host-path]-[uuid]
+# the [-host-path] part is the current cwd, replacing / with -
+# the [uuid] part is a random uuid to avoid conflicts
+
+# map the following volumes:
+# - /var/run/docker.sock:/var/run/docker-real.sock
+# - $HOME/.codex:/home/runner/.codex
+# - `pwd`:`pwd`
+
+# make the cwd in docker the same as the host, so that relative paths work the same way
+
