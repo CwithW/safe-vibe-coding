@@ -1,4 +1,5 @@
 services:
+  # for use with `docker compose build` only. no actual uses.
   base-image:
     build: .
     image: cwithw/safe-vibe-coding-base:latest

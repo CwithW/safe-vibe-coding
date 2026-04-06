@@ -9,6 +9,7 @@ RUN sed -i 's|http://archive.ubuntu.com|http://mirrors.aliyun.com|g' /etc/apt/so
 # System dependencies + openssh-server
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates git zip unzip wget gnupg xz-utils screen \
+    bubblewrap \
     python3.12 python3.12-venv python3-pip \
     php8.3-cli php8.3-xml php8.3-mbstring php8.3-curl php8.3-zip socat jq \
     openssh-server \
@@ -35,8 +36,9 @@ RUN ARCH=$(dpkg --print-architecture) \
 RUN npm config set registry https://registry.npmmirror.com \
     && npm install -g @khanacademy/format-claude-stream
 
-# Claude Code CLI — install as root at build time, copy to runner at runtime
-RUN curl -fsSL https://claude.ai/install.sh | bash
+# Claude Code CLI
+# RUN curl -fsSL https://claude.ai/install.sh | bash
+RUN npm install -g @anthropic-ai/claude-code
 
 # codex cli
 RUN npm i -g @openai/codex
@@ -54,18 +56,18 @@ RUN mkdir -p /run/sshd \
     && sed -i 's/#PermitUserEnvironment.*/PermitUserEnvironment yes/' /etc/ssh/sshd_config \
     && echo 'AcceptEnv *' >> /etc/ssh/sshd_config
 
-# Runner user
-RUN useradd -m -s /bin/bash runner \
-    && usermod -aG docker runner 2>/dev/null || true \
-    && mkdir -p /home/runner/.ssh /home/runner/workspace \
-    && chmod 700 /home/runner/.ssh \
-    && chown -R runner:runner /home/runner
+# cw user
+RUN useradd -m -s /bin/bash cw \
+    && usermod -aG docker cw 2>/dev/null || true \
+    && mkdir -p /home/cw/.ssh /home/cw/workspace \
+    && chmod 700 /home/cw/.ssh \
+    && chown -R cw:cw /home/cw
 
 # Copy uv to system PATH
 RUN cp /root/.local/bin/uv /usr/local/bin/uv \
     && cp /root/.local/bin/uvx /usr/local/bin/uvx 2>/dev/null || true
 
-RUN echo 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/runner/.local/bin"' > /etc/environment
+RUN echo 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/cw/.local/bin"' > /etc/environment
 
 
 COPY entrypoint.sh /entrypoint.sh
