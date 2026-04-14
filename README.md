@@ -20,9 +20,11 @@ the scripts, however, do NOT pass your HTTPS_PROXY and other environment variabl
 
 ### limitations
 
-does not allow to run under /tmp/.
+does not allow to run under /tmp/, because /tmp is already mounted in the container. you can't have a mountpoint inside another mountpoint.
 
 does mount your local /var/run/docker.sock to the container. this is indeed unsafe, but it is required to make docker available to the containered codex.
   - a better solution would be to use docker-in-docker or another rootless privilegeless dind solution, but it is too heavy for my current needs.
 
 Claude Code may have a detection for docker containers, and may category docker containers as multiple PCs.
+
+your existing mcp server on your local pc will likely fail to run inside the docker container, because they are not there. you can modify the dockerfile to build them into the container.
