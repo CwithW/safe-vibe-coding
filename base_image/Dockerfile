@@ -36,7 +36,9 @@ RUN ARCH=$(dpkg --print-architecture) \
 RUN npm config set registry https://registry.npmmirror.com \
     && npm install -g @khanacademy/format-claude-stream
 
+
 # Claude Code CLI
+# note:do not use curl | bash install, because it will install under root's home directory
 # RUN curl -fsSL https://claude.ai/install.sh | bash
 RUN npm install -g @anthropic-ai/claude-code
 

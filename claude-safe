@@ -1,0 +1,85 @@
+#!/bin/bash
+set -euo pipefail
+
+readonly IMAGE_NAME="cwithw/safe-vibe-coding-base:latest"
+readonly CONTAINER_PREFIX="safe-vibe-coding-claude"
+readonly DOCKER_SOCKET="/var/run/docker.sock"
+readonly CONTAINER_DOCKER_SOCKET="/var/run/docker-real.sock"
+readonly CLAUDE_HOME_DIR="${HOME}/.claude"
+readonly CLAUDE_JSON="${HOME}/.claude.json"
+readonly CONTAINER_HOME_DIR="/home/cw"
+
+# we currently mount /tmp:/tmp . you can't have a bind mount under another bind mount.
+if [[ "$(pwd)" =~ ^/tmp ]]; then
+    echo "$0: Current directory is under /tmp, which is not allowed for security reasons." >&2
+    exit 1
+fi
+
+generate_uuid() {
+    if [ -r "/proc/sys/kernel/random/uuid" ]; then
+        cat "/proc/sys/kernel/random/uuid"
+        return
+    fi
+
+    if command -v uuidgen >/dev/null 2>&1; then
+        uuidgen
+        return
+    fi
+
+    echo "Failed to generate UUID: neither /proc/sys/kernel/random/uuid nor uuidgen is available." >&2
+    exit 1
+}
+
+sanitize_path_for_name() {
+    printf '%s' "$1" \
+        | sed 's|/|-|g; s|^-*||; s|[^a-zA-Z0-9_.-]|-|g; s|-\{2,\}|-|g'
+}
+
+main() {
+    local current_dir
+    local uuid
+    local path_component
+    local container_name
+
+    current_dir="$(pwd)"
+
+    if [ ! -S "${DOCKER_SOCKET}" ]; then
+        echo "Docker socket not found at ${DOCKER_SOCKET}." >&2
+        exit 1
+    fi
+
+    mkdir -p "${CLAUDE_HOME_DIR}"
+    # ensure ~/.claude.json exists so docker mounts it as a file, not a directory
+    [ -f "${CLAUDE_JSON}" ] || touch "${CLAUDE_JSON}"
+
+    uuid="$(generate_uuid)"
+    path_component="$(sanitize_path_for_name "${current_dir}")"
+    container_name="${CONTAINER_PREFIX}-${path_component}-${uuid}"
+
+    exec docker run -it --rm \
+        --network host \
+        -w "${current_dir}" \
+        -v "${DOCKER_SOCKET}:${CONTAINER_DOCKER_SOCKET}" \
+        -v "${CLAUDE_HOME_DIR}:${CONTAINER_HOME_DIR}/.claude" \
+        -v "${CLAUDE_JSON}:${CONTAINER_HOME_DIR}/.claude.json" \
+        -v "${current_dir}:${current_dir}" \
+        -v /tmp:/tmp \
+        --name "${container_name}" \
+        "${IMAGE_NAME}" \
+        claude "$@"
+}
+
+main "$@"
+# command: claude
+#
+# the script essentially doing this: docker run -it --rm \
+#    -w `pwd` \
+#    -v /var/run/docker.sock:/var/run/docker-real.sock \
+#    -v $HOME/.claude:/home/cw/.claude \
+#    -v $HOME/.claude.json:/home/cw/.claude.json \
+#    -v `pwd`:`pwd` \
+#    --name safe-vibe-coding-claude-mnt-e-myproject-d2437fcb-2422-4be3-96c1-13e084832326 \
+#    cwithw/safe-vibe-coding-base:latest \
+#    claude
+#
+# but replacing the path with the current dir, and the uuid with a random uuid.

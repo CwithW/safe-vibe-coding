@@ -4,6 +4,7 @@ set -euo pipefail
 readonly RUNNER_USER="cw"
 readonly RUNNER_HOME="/home/cw"
 readonly RUNNER_CODEX_DIR="${RUNNER_HOME}/.codex"
+readonly RUNNER_CLAUDE_DIR="${RUNNER_HOME}/.claude"
 
 # avoid su saying -- or --yolo is not a command.
 build_command_payload() {
@@ -18,20 +19,28 @@ build_command_payload() {
     printf '%s' "${escaped_args[*]}"
 }
 
-# make sure the runner user can access the ~/.codex folder.
-# the ~/.codex folder is mounted from host, we don't change its permissions, so we change the runner user's permissions to match it.
+# make sure the runner user can access the mounted config folder (~/.codex or ~/.claude).
+# the config folder is mounted from host, we don't change its permissions, so we change the runner user's permissions to match it.
 sync_runner_identity() {
     local current_uid
     local current_gid
     local target_uid
     local target_gid
+    local ref_dir=""
 
-    [ -e "${RUNNER_CODEX_DIR}" ] || return
+    # pick whichever config directory is mounted from host
+    if [ -e "${RUNNER_CLAUDE_DIR}" ]; then
+        ref_dir="${RUNNER_CLAUDE_DIR}"
+    elif [ -e "${RUNNER_CODEX_DIR}" ]; then
+        ref_dir="${RUNNER_CODEX_DIR}"
+    else
+        return
+    fi
 
     current_uid="$(id -u "${RUNNER_USER}")"
     current_gid="$(id -g "${RUNNER_USER}")"
-    target_uid="$(stat -c '%u' "${RUNNER_CODEX_DIR}")"
-    target_gid="$(stat -c '%g' "${RUNNER_CODEX_DIR}")"
+    target_uid="$(stat -c '%u' "${ref_dir}")"
+    target_gid="$(stat -c '%g' "${ref_dir}")"
 
     if [ "${target_gid}" != "${current_gid}" ]; then
         groupmod -o -g "${target_gid}" "${RUNNER_USER}"
