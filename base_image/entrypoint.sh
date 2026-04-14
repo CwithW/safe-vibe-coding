@@ -5,6 +5,7 @@ readonly RUNNER_USER="cw"
 readonly RUNNER_HOME="/home/cw"
 readonly RUNNER_CODEX_DIR="${RUNNER_HOME}/.codex"
 
+# avoid su saying -- or --yolo is not a command.
 build_command_payload() {
     local escaped_args=()
     local arg
@@ -17,6 +18,8 @@ build_command_payload() {
     printf '%s' "${escaped_args[*]}"
 }
 
+# make sure the runner user can access the ~/.codex folder.
+# the ~/.codex folder is mounted from host, we don't change its permissions, so we change the runner user's permissions to match it.
 sync_runner_identity() {
     local current_uid
     local current_gid

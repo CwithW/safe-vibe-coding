@@ -8,6 +8,12 @@ readonly CONTAINER_DOCKER_SOCKET="/var/run/docker-real.sock"
 readonly CODEX_HOME_DIR="${HOME}/.codex"
 readonly CONTAINER_HOME_DIR="/home/cw"
 
+# we currently mount /tmp:/tmp . you can't have a bind mount under another bind mount.
+if [[ "$(pwd)" =~ ^/tmp ]]; then
+    echo "$0: Current directory is under /tmp, which is not allowed for security reasons." >&2
+    exit 1
+fi
+
 generate_uuid() {
     if [ -r "/proc/sys/kernel/random/uuid" ]; then
         cat "/proc/sys/kernel/random/uuid"
@@ -53,6 +59,7 @@ main() {
         -v "${DOCKER_SOCKET}:${CONTAINER_DOCKER_SOCKET}" \
         -v "${CODEX_HOME_DIR}:${CONTAINER_HOME_DIR}/.codex" \
         -v "${current_dir}:${current_dir}" \
+        -v /tmp:/tmp \
         --name "${container_name}" \
         "${IMAGE_NAME}" \
         codex --yolo "$@"
